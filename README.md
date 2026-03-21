@@ -39,16 +39,16 @@ uv run or-cli credits -m openai/gpt-4 -m anthropic/claude-3 -d 30
 
 ## Configuration
 
-Set your OpenRouter API key via environment variable:
+Set your OpenRouter management key via environment variable:
 
 ```bash
-export OPENROUTER_API_KEY=your_api_key_here
+export OPENROUTER_MGT_KEY=your_key_here
 ```
 
 Or create a `.env` file:
 
 ```
-OPENROUTER_API_KEY=your_api_key_here
+OPENROUTER_MGT_KEY=your_key_here
 ```
 
 ## Commands

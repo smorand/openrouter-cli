@@ -12,7 +12,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    openrouter_api_key: str = ""
+    openrouter_mgt_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     default_model: str = "openai/gpt-3.5-turbo"
     timeout_seconds: int = 30

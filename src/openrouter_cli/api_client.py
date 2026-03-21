@@ -49,7 +49,7 @@ class OpenRouterClient:
         self._client = httpx.AsyncClient(
             base_url=settings.openrouter_base_url,
             headers={
-                "Authorization": f"Bearer {settings.openrouter_api_key}",
+                "Authorization": f"Bearer {settings.openrouter_mgt_key}",
                 "HTTP-Referer": "https://github.com/smorand/openrouter-cli",
                 "X-Title": "OpenRouter CLI",
             },

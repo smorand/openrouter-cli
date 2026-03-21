@@ -36,7 +36,7 @@ make install
 Set your API key via environment variable:
 
 ```bash
-export OPENROUTER_API_KEY=your_api_key_here
+export OPENROUTER_MGT_KEY=your_key_here
 ```
 
 ### Using .env File
@@ -44,7 +44,7 @@ export OPENROUTER_API_KEY=your_api_key_here
 Create a `.env` file in the project root:
 
 ```env
-OPENROUTER_API_KEY=your_api_key_here
+OPENROUTER_MGT_KEY=your_key_here
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 TIMEOUT_SECONDS=30
 ```
@@ -188,10 +188,10 @@ make run-down
 
 #### API Key Not Found
 
-Ensure `OPENROUTER_API_KEY` is set:
+Ensure `OPENROUTER_MGT_KEY` is set:
 
 ```bash
-echo $OPENROUTER_API_KEY
+echo $OPENROUTER_MGT_KEY
 ```
 
 The API key must be a management key (not a regular API key) to access credit usage data.
