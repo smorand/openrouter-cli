@@ -265,7 +265,8 @@ def credits(
                 grand_completion = 0
 
                 for date in sorted(daily_totals.keys()):
-                    date_display = datetime.strptime(date, "%Y-%m-%d").strftime("%d/%m")
+                    date_clean = date.split()[0] if " " in date else date
+                    date_display = datetime.strptime(date_clean, "%Y-%m-%d").strftime("%d/%m")
                     table.add_row(
                         date_display,
                         f"{daily_totals[date]:.2f}",
@@ -329,7 +330,8 @@ def credits(
 
             grand_total = 0
             for date in all_dates:
-                date_display = datetime.strptime(date, "%Y-%m-%d").strftime("%d/%m")
+                date_clean = date.split()[0] if " " in date else date
+                date_display = datetime.strptime(date_clean, "%Y-%m-%d").strftime("%d/%m")
                 row_data = [date_display]
                 day_total: float = 0
                 for model in all_models_sorted:
