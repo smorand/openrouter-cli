@@ -61,9 +61,9 @@ def models(
                 console.print("[red]No models found[/red]")
                 return
 
-            table = Table(title="OpenRouter Models")
-            table.add_column("ID", style="cyan", no_wrap=True)
-            table.add_column("Name", style="magenta")
+            table = Table(title="OpenRouter Models", show_lines=True)
+            table.add_column("ID", style="cyan", max_width=30)
+            table.add_column("Name", style="magenta", max_width=40)
             table.add_column("Context", justify="right", style="green")
             table.add_column("Prompt ($/1k)", justify="right", style="yellow")
             table.add_column("Completion ($/1k)", justify="right", style="yellow")
