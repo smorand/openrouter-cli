@@ -179,22 +179,24 @@ def credits(
             if chart:
                 chart_daily_totals: dict[str, float] = {}
                 for u in filtered_data:
-                    if u.date not in chart_daily_totals:
-                        chart_daily_totals[u.date] = 0
-                    chart_daily_totals[u.date] += u.usage
+                    date_clean = u.date.split()[0] if " " in u.date else u.date
+                    if date_clean not in chart_daily_totals:
+                        chart_daily_totals[date_clean] = 0
+                    chart_daily_totals[date_clean] += u.usage
 
-                all_dates = sorted(chart_daily_totals.keys())
-                if not all_dates:
-                    console.print("[yellow]No data to display[/yellow]")
-                    return
-
-                dates_numeric = list(range(len(all_dates)))
-                values = [chart_daily_totals[d] for d in all_dates]
+                all_dates = []
+                current_date = start_date
+                while current_date <= end_date:
+                    all_dates.append(current_date.strftime("%Y-%m-%d"))
+                    current_date += timedelta(days=1)
 
                 date_labels = []
                 for d in all_dates:
-                    date_clean = d.split()[0] if " " in d else d
-                    date_labels.append(datetime.strptime(date_clean, "%Y-%m-%d").strftime("%d/%m"))
+                    date_labels.append(datetime.strptime(d, "%Y-%m-%d").strftime("%d/%m"))
+
+                values = [chart_daily_totals.get(d, 0.0) for d in all_dates]
+
+                dates_numeric = list(range(len(all_dates)))
 
                 fig = plotille.Figure()
                 fig.width = 70
@@ -289,15 +291,22 @@ def credits(
                 daily_completion: dict[str, int] = {}
 
                 for u in filtered_data:
-                    if u.date not in daily_totals:
-                        daily_totals[u.date] = 0
-                        daily_requests[u.date] = 0
-                        daily_prompt[u.date] = 0
-                        daily_completion[u.date] = 0
-                    daily_totals[u.date] += u.usage
-                    daily_requests[u.date] += u.requests
-                    daily_prompt[u.date] += u.prompt_tokens
-                    daily_completion[u.date] += u.completion_tokens
+                    date_clean = u.date.split()[0] if " " in u.date else u.date
+                    if date_clean not in daily_totals:
+                        daily_totals[date_clean] = 0
+                        daily_requests[date_clean] = 0
+                        daily_prompt[date_clean] = 0
+                        daily_completion[date_clean] = 0
+                    daily_totals[date_clean] += u.usage
+                    daily_requests[date_clean] += u.requests
+                    daily_prompt[date_clean] += u.prompt_tokens
+                    daily_completion[date_clean] += u.completion_tokens
+
+                all_dates = []
+                current_date = start_date
+                while current_date <= end_date:
+                    all_dates.append(current_date.strftime("%Y-%m-%d"))
+                    current_date += timedelta(days=1)
 
                 table = Table(title=f"Daily Credit Usage ({start_str} to {end_str})")
                 table.add_column("Date", style="cyan")
@@ -311,24 +320,23 @@ def credits(
                 grand_prompt = 0
                 grand_completion = 0
 
-                for date in sorted(daily_totals.keys()):
-                    date_clean = date.split()[0] if " " in date else date
-                    date_display = datetime.strptime(date_clean, "%Y-%m-%d").strftime("%d/%m")
+                for date in all_dates:
+                    date_display = datetime.strptime(date, "%Y-%m-%d").strftime("%d/%m")
                     table.add_row(
                         date_display,
-                        f"{daily_totals[date]:.2f}",
-                        str(daily_requests[date]),
-                        f"{daily_prompt[date]:,}",
-                        f"{daily_completion[date]:,}",
+                        f"{daily_totals.get(date, 0.0):.2f}",
+                        str(daily_requests.get(date, 0)),
+                        f"{daily_prompt.get(date, 0):,}",
+                        f"{daily_completion.get(date, 0):,}",
                     )
-                    grand_total += daily_totals[date]
-                    grand_requests += daily_requests[date]
-                    grand_prompt += daily_prompt[date]
-                    grand_completion += daily_completion[date]
+                    grand_total += daily_totals.get(date, 0.0)
+                    grand_requests += daily_requests.get(date, 0)
+                    grand_prompt += daily_prompt.get(date, 0)
+                    grand_completion += daily_completion.get(date, 0)
 
                 table.add_row(
                     "[bold]Total[/bold]",
-                    f"[bold]${grand_total:.4f}[/bold]",
+                    f"[bold]{grand_total:.2f}[/bold]",
                     f"[bold]{grand_requests}[/bold]",
                     f"[bold]{grand_prompt:,}[/bold]",
                     f"[bold]{grand_completion:,}[/bold]",
@@ -344,22 +352,28 @@ def credits(
             daily_completion_dm: dict[str, dict[str, int]] = {}
 
             for u in filtered_data:
-                if u.date not in daily_models:
-                    daily_models[u.date] = {}
-                    daily_requests_dm[u.date] = {}
-                    daily_prompt_dm[u.date] = {}
-                    daily_completion_dm[u.date] = {}
-                if u.model not in daily_models[u.date]:
-                    daily_models[u.date][u.model] = 0
-                    daily_requests_dm[u.date][u.model] = 0
-                    daily_prompt_dm[u.date][u.model] = 0
-                    daily_completion_dm[u.date][u.model] = 0
-                daily_models[u.date][u.model] += u.usage
-                daily_requests_dm[u.date][u.model] += u.requests
-                daily_prompt_dm[u.date][u.model] += u.prompt_tokens
-                daily_completion_dm[u.date][u.model] += u.completion_tokens
+                date_clean = u.date.split()[0] if " " in u.date else u.date
+                if date_clean not in daily_models:
+                    daily_models[date_clean] = {}
+                    daily_requests_dm[date_clean] = {}
+                    daily_prompt_dm[date_clean] = {}
+                    daily_completion_dm[date_clean] = {}
+                if u.model not in daily_models[date_clean]:
+                    daily_models[date_clean][u.model] = 0
+                    daily_requests_dm[date_clean][u.model] = 0
+                    daily_prompt_dm[date_clean][u.model] = 0
+                    daily_completion_dm[date_clean][u.model] = 0
+                daily_models[date_clean][u.model] += u.usage
+                daily_requests_dm[date_clean][u.model] += u.requests
+                daily_prompt_dm[date_clean][u.model] += u.prompt_tokens
+                daily_completion_dm[date_clean][u.model] += u.completion_tokens
 
-            all_dates = sorted(daily_models.keys())
+            all_dates = []
+            current_date = start_date
+            while current_date <= end_date:
+                all_dates.append(current_date.strftime("%Y-%m-%d"))
+                current_date += timedelta(days=1)
+
             all_models_sorted = sorted({u.model for u in filtered_data})
 
             if models:
@@ -368,8 +382,7 @@ def credits(
             table = Table(title=f"Credit Usage: Per Model per Day ({start_str} to {end_str})")
             table.add_column("Model", style="cyan", max_width=30)
             for date in all_dates:
-                date_clean = date.split()[0] if " " in date else date
-                date_display = datetime.strptime(date_clean, "%Y-%m-%d").strftime("%d/%m")
+                date_display = datetime.strptime(date, "%Y-%m-%d").strftime("%d/%m")
                 table.add_column(date_display, justify="right", style="green")
             table.add_column("Total", justify="right", style="yellow")
 
@@ -380,7 +393,7 @@ def credits(
                 row_data = [model.split("/")[-1][:30]]
                 model_total: float = 0
                 for date in all_dates:
-                    value = daily_models[date].get(model, 0)
+                    value = daily_models.get(date, {}).get(model, 0)
                     model_total += value
                     date_totals[date] += value
                     row_data.append(f"{value:.2f}")
