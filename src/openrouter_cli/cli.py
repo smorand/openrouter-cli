@@ -318,38 +318,32 @@ def credits(
             if models:
                 all_models_sorted = [m for m in all_models_sorted if m in models]
 
-            table = Table(title=f"Credit Usage: Per Day per Model ({start_str} to {end_str})")
-            table.add_column("Date", style="cyan")
-            for model in all_models_sorted:
-                table.add_column(
-                    model.split("/")[-1][:20],
-                    justify="right",
-                    style="green",
-                )
-            table.add_column("Day Total", justify="right", style="yellow")
-
-            grand_total = 0
+            table = Table(title=f"Credit Usage: Per Model per Day ({start_str} to {end_str})")
+            table.add_column("Model", style="cyan", max_width=30)
             for date in all_dates:
                 date_clean = date.split()[0] if " " in date else date
                 date_display = datetime.strptime(date_clean, "%Y-%m-%d").strftime("%d/%m")
-                row_data = [date_display]
-                day_total: float = 0
-                for model in all_models_sorted:
-                    value = daily_models[date].get(model, 0)
-                    day_total += value
-                    row_data.append(f"{value:.2f}")
-                row_data.append(f"{day_total:.2f}")
-                table.add_row(*row_data)
-                grand_total += day_total
+                table.add_column(date_display, justify="right", style="green")
+            table.add_column("Total", justify="right", style="yellow")
 
-            summary_row = ["[bold]Total[/bold]"]
-            model_totals_sum: dict[str, float] = {m: 0.0 for m in all_models_sorted}  # noqa: C420
-            for date in all_dates:
-                for model in all_models_sorted:
-                    model_totals_sum[model] += daily_models[date].get(model, 0)
+            grand_total = 0
+            date_totals: dict[str, float] = dict.fromkeys(all_dates, 0.0)
 
             for model in all_models_sorted:
-                summary_row.append(f"{model_totals_sum[model]:.2f}")
+                row_data = [model.split("/")[-1][:30]]
+                model_total: float = 0
+                for date in all_dates:
+                    value = daily_models[date].get(model, 0)
+                    model_total += value
+                    date_totals[date] += value
+                    row_data.append(f"{value:.2f}")
+                row_data.append(f"{model_total:.2f}")
+                table.add_row(*row_data)
+                grand_total += model_total
+
+            summary_row = ["[bold]Total[/bold]"]
+            for date in all_dates:
+                summary_row.append(f"[bold]{date_totals[date]:.2f}[/bold]")
             summary_row.append(f"[bold]{grand_total:.2f}[/bold]")
             table.add_row(*summary_row, style="bold")
 
