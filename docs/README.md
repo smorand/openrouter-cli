@@ -2,7 +2,10 @@
 
 ## Overview
 
-OpenRouter CLI is a command-line interface for interacting with the OpenRouter API, which provides unified access to various large language models.
+OpenRouter CLI is a command-line interface for interacting with the OpenRouter API, providing:
+- Model listing with pricing information
+- Free model filtering
+- Credit usage tracking with detailed breakdowns
 
 ## Installation
 
@@ -16,7 +19,7 @@ OpenRouter CLI is a command-line interface for interacting with the OpenRouter A
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone git@github.com:smorand/openrouter-cli.git
 cd openrouter-cli
 
 # Install dependencies
@@ -43,59 +46,70 @@ Create a `.env` file in the project root:
 ```env
 OPENROUTER_API_KEY=your_api_key_here
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
-DEFAULT_MODEL=openai/gpt-3.5-turbo
 TIMEOUT_SECONDS=30
 ```
 
 ## Usage
 
-### Basic Commands
+### Models Command
+
+List available models from OpenRouter with pricing and context information.
 
 ```bash
-# Show help
-openrouter-cli --help
+# List all models
+uv run or-cli models
 
-# List available models
-openrouter-cli models
-
-# List models with custom limit
-openrouter-cli models --limit 20
-
-# Generate a completion
-openrouter-cli complete "What is the capital of France?"
-
-# Use a specific model
-openrouter-cli complete "Explain quantum computing" --model anthropic/claude-3-opus
+# List only free models
+uv run or-cli models --free
 ```
 
-### Command Options
+**Output columns:**
+- ID: Model identifier (e.g., `openai/gpt-4`)
+- Name: Display name
+- Context: Maximum context length in tokens
+- Prompt ($/1k): Cost per 1,000 prompt tokens
+- Completion ($/1k): Cost per 1,000 completion tokens
+- Free: Indicator showing if model is free (✓) or paid (✗)
 
-#### models
+### Credits Command
 
-List available models from OpenRouter.
+Get detailed credit usage information with flexible filtering and display options.
 
 ```bash
-openrouter-cli models [OPTIONS]
+# Default: per-day per-model breakdown for last 7 days
+uv run or-cli credits
 
-Options:
-  -l, --limit INTEGER  Maximum number of models to display (default: 10)
-  --help               Show this message and exit
+# Filter by specific models (can use multiple -m)
+uv run or-cli credits -m openai/gpt-4 -m anthropic/claude-3
+
+# Custom date range (last 30 days)
+uv run or-cli credits -d 30
+
+# Show only totals per model (no per-day breakdown)
+uv run or-cli credits -npd
+
+# Show only daily totals (no per-model breakdown)
+uv run or-cli credits -npm
+
+# Show grand total only (no per-day, no per-model)
+uv run or-cli credits -npd -npm
 ```
 
-#### complete
+**Options:**
+- `-m, --model TEXT`: Filter by model slug (can be specified multiple times)
+- `-d, --days INTEGER`: Number of days to look back (default: 7, max: 90)
+- `-npd, --no-per-day`: Show total for period instead of per-day breakdown
+- `-npm, --no-per-model`: Show total across all models instead of per-model breakdown
 
-Generate a completion using OpenRouter.
+**Display modes:**
 
-```bash
-openrouter-cli complete [OPTIONS] PROMPT
+1. **Default (per-day per-model):** Shows a table with dates as rows and models as columns, with day totals and model totals
 
-Arguments:
-  PROMPT  The prompt to send
+2. **No per-day (`-npd`):** Shows totals aggregated by model with request counts and token usage
 
-Options:
-  -m, --model TEXT  Model to use for completion (default: openai/gpt-3.5-turbo)
-  --help            Show this message and exit
-```
+3. **No per-model (`-npm`):** Shows daily totals with request counts and token usage
+
+4. **Both flags (`-npd -npm`):** Shows a simple summary with grand totals only
 
 ### Global Options
 
@@ -110,42 +124,40 @@ Options:
 ### Running During Development
 
 ```bash
-# Run with uv (auto-syncs dependencies)
-make run
+# Sync dependencies and run
+make sync
+uv run or-cli models
 
-# Run with arguments
-make run ARGS='models --limit 5'
-
-# Run entry point directly (faster for development)
-make run-dev ARGS='complete "Hello"'
+# Run with verbose logging
+uv run or-cli models -v
 ```
 
 ### Testing
 
 ```bash
-# Run tests
+# Run all tests
 make test
 
 # Run tests with coverage
 make test-cov
 
 # Run specific tests
-make test ARGS='-k test_cli_complete'
+make test ARGS='-k test_cli_models'
 ```
 
 ### Code Quality
 
 ```bash
-# Run all checks
+# Run all checks (lint, format, typecheck, test)
 make check
 
-# Format code
+# Format code only
 make format
 
-# Lint code
+# Lint code only
 make lint
 
-# Type checking
+# Type checking only
 make typecheck
 ```
 
@@ -182,6 +194,18 @@ Ensure `OPENROUTER_API_KEY` is set:
 echo $OPENROUTER_API_KEY
 ```
 
+The API key must be a management key (not a regular API key) to access credit usage data.
+
+#### No Models Found
+
+Check your internet connection and verify the OpenRouter API is accessible.
+
+#### No Usage Data Found
+
+- Verify your API key has usage data
+- Try a larger date range with `-d 30`
+- Ensure the API key has management permissions
+
 #### Dependency Issues
 
 Reinstall dependencies:
@@ -199,6 +223,16 @@ If installing globally fails:
 # Ensure ~/.local/bin is in PATH
 export PATH="$HOME/.local/bin:$PATH"
 ```
+
+## API Reference
+
+The CLI uses the following OpenRouter API endpoints:
+
+- `GET /models` - List all available models
+- `GET /activity` - Get usage activity for date range
+- `GET /auth/key` - Get current API key information
+
+See [OpenRouter API Documentation](https://openrouter.ai/docs) for more details.
 
 ## Contributing
 

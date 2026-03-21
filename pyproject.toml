@@ -31,7 +31,7 @@ dev = [
 ]
 
 [project.scripts]
-openrouter-cli = "openrouter_cli.cli:app"
+or-cli = "openrouter_cli.cli:app"
 
 [build-system]
 requires = ["hatchling"]
@@ -64,7 +64,9 @@ select = [
 ]
 ignore = [
     "E501",
+    "PLR0912",
     "PLR0913",
+    "PLR0915",
 ]
 
 [tool.ruff.lint.per-file-ignores]

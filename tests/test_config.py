@@ -1,7 +1,5 @@
 """Tests for configuration module."""
 
-import os
-
 import pytest
 
 from openrouter_cli.config import Settings
