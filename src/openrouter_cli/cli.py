@@ -175,7 +175,7 @@ def credits(
 
                 console.print("\n[bold]Total Usage Summary[/bold]")
                 console.print(f"  Period: {start_str} to {end_str}")
-                console.print(f"  Total Cost: ${total:.4f}")
+                console.print(f"  Total Cost: {total:.2f}")
                 console.print(f"  Total Requests: {total_requests}")
                 console.print(f"  Total Prompt Tokens: {total_prompt:,}")
                 console.print(f"  Total Completion Tokens: {total_completion:,}")
@@ -200,7 +200,7 @@ def credits(
 
                 table = Table(title=f"Credit Usage by Model ({start_str} to {end_str})")
                 table.add_column("Model", style="cyan")
-                table.add_column("Cost ($)", justify="right", style="green")
+                table.add_column("Cost", justify="right", style="green")
                 table.add_column("Requests", justify="right", style="yellow")
                 table.add_column("Prompt Tokens", justify="right", style="magenta")
                 table.add_column("Completion Tokens", justify="right", style="magenta")
@@ -213,7 +213,7 @@ def credits(
                 for model in sorted(model_totals.keys()):
                     table.add_row(
                         model,
-                        f"${model_totals[model]:.4f}",
+                        f"{model_totals[model]:.2f}",
                         str(model_requests[model]),
                         f"{model_prompt[model]:,}",
                         f"{model_completion[model]:,}",
@@ -225,7 +225,7 @@ def credits(
 
                 table.add_row(
                     "[bold]Total[/bold]",
-                    f"[bold]${grand_total:.4f}[/bold]",
+                    f"[bold]{grand_total:.2f}[/bold]",
                     f"[bold]{grand_requests}[/bold]",
                     f"[bold]{grand_prompt:,}[/bold]",
                     f"[bold]{grand_completion:,}[/bold]",
@@ -254,7 +254,7 @@ def credits(
 
                 table = Table(title=f"Daily Credit Usage ({start_str} to {end_str})")
                 table.add_column("Date", style="cyan")
-                table.add_column("Cost ($)", justify="right", style="green")
+                table.add_column("Cost", justify="right", style="green")
                 table.add_column("Requests", justify="right", style="yellow")
                 table.add_column("Prompt Tokens", justify="right", style="magenta")
                 table.add_column("Completion Tokens", justify="right", style="magenta")
@@ -265,9 +265,10 @@ def credits(
                 grand_completion = 0
 
                 for date in sorted(daily_totals.keys()):
+                    date_display = datetime.strptime(date, "%Y-%m-%d").strftime("%d/%m")
                     table.add_row(
-                        date,
-                        f"${daily_totals[date]:.4f}",
+                        date_display,
+                        f"{daily_totals[date]:.2f}",
                         str(daily_requests[date]),
                         f"{daily_prompt[date]:,}",
                         f"{daily_completion[date]:,}",
@@ -328,13 +329,14 @@ def credits(
 
             grand_total = 0
             for date in all_dates:
-                row_data = [date]
+                date_display = datetime.strptime(date, "%Y-%m-%d").strftime("%d/%m")
+                row_data = [date_display]
                 day_total: float = 0
                 for model in all_models_sorted:
                     value = daily_models[date].get(model, 0)
                     day_total += value
-                    row_data.append(f"${value:.4f}")
-                row_data.append(f"${day_total:.4f}")
+                    row_data.append(f"{value:.2f}")
+                row_data.append(f"{day_total:.2f}")
                 table.add_row(*row_data)
                 grand_total += day_total
 
@@ -345,8 +347,8 @@ def credits(
                     model_totals_sum[model] += daily_models[date].get(model, 0)
 
             for model in all_models_sorted:
-                summary_row.append(f"${model_totals_sum[model]:.4f}")
-            summary_row.append(f"[bold]${grand_total:.4f}[/bold]")
+                summary_row.append(f"{model_totals_sum[model]:.2f}")
+            summary_row.append(f"[bold]{grand_total:.2f}[/bold]")
             table.add_row(*summary_row, style="bold")
 
             console.print(table)
