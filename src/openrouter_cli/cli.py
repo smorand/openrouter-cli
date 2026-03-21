@@ -5,6 +5,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Annotated
 
+import plotille
 import typer
 from rich.console import Console
 from rich.table import Table
@@ -124,6 +125,14 @@ def credits(
             help="Show total across all models instead of per-model breakdown",
         ),
     ] = False,
+    chart: Annotated[
+        bool,
+        typer.Option(
+            "--chart",
+            "-c",
+            help="Show usage as a line chart instead of table",
+        ),
+    ] = False,
 ) -> None:
     """Get credit usage filtered by model and days.
 
@@ -166,6 +175,44 @@ def credits(
                 if not filtered_data:
                     console.print(f"[red]No data found for specified model(s): {', '.join(models)}[/red]")
                     return
+
+            if chart:
+                chart_daily_totals: dict[str, float] = {}
+                for u in filtered_data:
+                    if u.date not in chart_daily_totals:
+                        chart_daily_totals[u.date] = 0
+                    chart_daily_totals[u.date] += u.usage
+
+                all_dates = sorted(chart_daily_totals.keys())
+                if not all_dates:
+                    console.print("[yellow]No data to display[/yellow]")
+                    return
+
+                dates_numeric = list(range(len(all_dates)))
+                values = [chart_daily_totals[d] for d in all_dates]
+
+                date_labels = []
+                for d in all_dates:
+                    date_clean = d.split()[0] if " " in d else d
+                    date_labels.append(datetime.strptime(date_clean, "%Y-%m-%d").strftime("%d/%m"))
+
+                fig = plotille.Figure()
+                fig.width = 70
+                fig.height = 15
+                fig.x_label = "Date"
+                fig.y_label = "Cost"
+
+                def tick_fn(_val: float, idx: float) -> str:
+                    idx_int = int(idx)
+                    return date_labels[idx_int] if 0 <= idx_int < len(date_labels) else ""
+
+                fig.x_ticks_fkt = tick_fn
+                fig.plot(dates_numeric, values, lc="green", label="Daily Cost")
+
+                console.print(f"\n[bold]Credit Usage Chart ({start_str} to {end_str})[/bold]\n")
+                print(fig.show())
+                console.print(f"\n[bold]Total:[/bold] {sum(values):.2f}")
+                return
 
             if no_per_day and no_per_model:
                 total = sum(u.usage for u in filtered_data)

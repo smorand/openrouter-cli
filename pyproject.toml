@@ -17,6 +17,7 @@ dependencies = [
     "pydantic-settings>=2.7.0",
     "opentelemetry-api>=1.29.0",
     "opentelemetry-sdk>=1.29.0",
+    "plotille>=2.8.0",
 ]
 
 [dependency-groups]
@@ -64,6 +65,7 @@ select = [
 ]
 ignore = [
     "E501",
+    "PLR0911",
     "PLR0912",
     "PLR0913",
     "PLR0915",
@@ -97,7 +99,7 @@ show_error_codes = true
 show_column_numbers = true
 
 [[tool.mypy.overrides]]
-module = ["httpx.*"]
+module = ["httpx.*", "plotille.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
