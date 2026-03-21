@@ -43,6 +43,7 @@ make docker-build       # Build Docker image
 - `.agent_docs/python.md` - Python coding standards
 - `.agent_docs/makefile.md` - Makefile documentation
 - `.agent_docs/opentelemetry.md` - OpenTelemetry setup
+- `.agent_docs/openrouter-api.md` - OpenRouter API behavior and limitations
 
 ## Processes
 
