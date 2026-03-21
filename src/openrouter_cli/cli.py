@@ -18,6 +18,8 @@ app = typer.Typer()
 logger = logging.getLogger(__name__)
 console = Console()
 
+WEEKLY_GROUPING_THRESHOLD = 14
+
 
 @app.callback()
 def main(
@@ -379,35 +381,83 @@ def credits(
             if models:
                 all_models_sorted = [m for m in all_models_sorted if m in models]
 
-            table = Table(title=f"Credit Usage: Per Model per Day ({start_str} to {end_str})")
-            table.add_column("Model", style="cyan", max_width=30)
-            for date in all_dates:
-                date_display = datetime.strptime(date, "%Y-%m-%d").strftime("%d/%m")
-                table.add_column(date_display, justify="right", style="green")
-            table.add_column("Total", justify="right", style="yellow")
+            if len(all_dates) > WEEKLY_GROUPING_THRESHOLD:
+                weeks: dict[str, list[str]] = {}
+                current_date = start_date
+                while current_date <= end_date:
+                    _, iso_week, _ = current_date.isocalendar()
+                    week_key = f"W{iso_week}"
+                    if week_key not in weeks:
+                        weeks[week_key] = []
+                    weeks[week_key].append(current_date.strftime("%Y-%m-%d"))
+                    current_date += timedelta(days=1)
 
-            grand_total = 0
-            date_totals: dict[str, float] = dict.fromkeys(all_dates, 0.0)
+                weekly_models: dict[str, dict[str, float]] = {}
+                for week_key, dates in weeks.items():
+                    weekly_models[week_key] = {}
+                    for model in all_models_sorted:
+                        total = sum(daily_models.get(d, {}).get(model, 0) for d in dates)
+                        weekly_models[week_key][model] = total
 
-            for model in all_models_sorted:
-                row_data = [model.split("/")[-1][:30]]
-                model_total: float = 0
+                table = Table(title=f"Credit Usage: Per Model per Week ({start_str} to {end_str})")
+                table.add_column("Model", style="cyan", max_width=25)
+                for week_key in sorted(weeks.keys()):
+                    table.add_column(week_key, justify="right", style="green", width=8)
+                table.add_column("Total", justify="right", style="yellow", width=8)
+
+                grand_total = 0
+                week_totals: dict[str, float] = dict.fromkeys(sorted(weeks.keys()), 0.0)
+
+                for model in all_models_sorted:
+                    row_data = [model.split("/")[-1][:25]]
+                    model_total: float = 0
+                    for week_key in sorted(weeks.keys()):
+                        value = weekly_models[week_key].get(model, 0)
+                        model_total += value
+                        week_totals[week_key] += value
+                        row_data.append(f"{value:.2f}")
+                    row_data.append(f"{model_total:.2f}")
+                    table.add_row(*row_data)
+                    grand_total += model_total
+
+                summary_row = ["[bold]Total[/bold]"]
+                for week_key in sorted(weeks.keys()):
+                    summary_row.append(f"[bold]{week_totals[week_key]:.2f}[/bold]")
+                summary_row.append(f"[bold]{grand_total:.2f}[/bold]")
+                table.add_row(*summary_row, style="bold")
+
+                console.print(table)
+                console.print(f"\n[dim]Grouped by week ({len(all_dates)} days)[/dim]")
+            else:
+                table = Table(title=f"Credit Usage: Per Model per Day ({start_str} to {end_str})")
+                table.add_column("Model", style="cyan", max_width=25)
                 for date in all_dates:
-                    value = daily_models.get(date, {}).get(model, 0)
-                    model_total += value
-                    date_totals[date] += value
-                    row_data.append(f"{value:.2f}")
-                row_data.append(f"{model_total:.2f}")
-                table.add_row(*row_data)
-                grand_total += model_total
+                    date_display = datetime.strptime(date, "%Y-%m-%d").strftime("%d/%m")
+                    table.add_column(date_display, justify="right", style="green", width=6)
+                table.add_column("Total", justify="right", style="yellow", width=8)
 
-            summary_row = ["[bold]Total[/bold]"]
-            for date in all_dates:
-                summary_row.append(f"[bold]{date_totals[date]:.2f}[/bold]")
-            summary_row.append(f"[bold]{grand_total:.2f}[/bold]")
-            table.add_row(*summary_row, style="bold")
+                grand_total = 0
+                date_totals: dict[str, float] = dict.fromkeys(all_dates, 0.0)
 
-            console.print(table)
+                for model in all_models_sorted:
+                    row_data = [model.split("/")[-1][:25]]
+                    total_per_model: float = 0
+                    for date in all_dates:
+                        value = daily_models.get(date, {}).get(model, 0)
+                        total_per_model += value
+                        date_totals[date] += value
+                        row_data.append(f"{value:.2f}")
+                    row_data.append(f"{total_per_model:.2f}")
+                    table.add_row(*row_data)
+                    grand_total += total_per_model
+
+                summary_row = ["[bold]Total[/bold]"]
+                for date in all_dates:
+                    summary_row.append(f"[bold]{date_totals[date]:.2f}[/bold]")
+                summary_row.append(f"[bold]{grand_total:.2f}[/bold]")
+                table.add_row(*summary_row, style="bold")
+
+                console.print(table)
         finally:
             await client.close()
 
