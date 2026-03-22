@@ -20,6 +20,7 @@ make docker-build       # Build Docker image
 
 - `or-cli models [--free]` - List models, optionally filter free ones
 - `or-cli credits [-m model] [-d days] [-npd] [-npm]` - Get credit usage
+- `or-cli balance` - Get current account balance
 
 ## Project Structure
 
@@ -33,7 +34,7 @@ make docker-build       # Build Docker image
 
 - Entry point in `src/openrouter_cli/cli.py` contains only CLI wiring
 - Business logic in `api_client.py` module
-- Use `@dataclass(frozen=True)` for value objects (ModelInfo, CreditUsage)
+- Use `@dataclass(frozen=True)` for value objects (ModelInfo, CreditUsage, BalanceInfo)
 - All async operations use asyncio patterns
 - Logging with `%` formatting
 - Rich tables for output formatting
