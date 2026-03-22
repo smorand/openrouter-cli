@@ -36,6 +36,22 @@ class CreditUsage:
     completion_tokens: int
 
 
+@dataclass(frozen=True)
+class BalanceInfo:
+    """Account balance information."""
+
+    total_credits: float
+    usage_total: float
+    usage_daily: float
+    usage_weekly: float
+    usage_monthly: float
+
+    @property
+    def remaining_credits(self) -> float:
+        """Calculate remaining credits."""
+        return self.total_credits - self.usage_total
+
+
 class OpenRouterClient:
     """Client for interacting with OpenRouter API."""
 
@@ -156,3 +172,27 @@ class OpenRouterClient:
         response = await self._client.get("/auth/key")
         response.raise_for_status()
         return response.json()  # type: ignore[no-any-return]
+
+    async def get_balance(self) -> BalanceInfo:
+        """Get account balance and usage information.
+
+        Returns:
+            BalanceInfo object with balance details
+        """
+        logger.info("Fetching account balance")
+
+        response = await self._client.get("/credits")
+        response.raise_for_status()
+        data = response.json()
+        credits_data = data.get("data", {})
+
+        key_data = await self.get_current_key_usage()
+        usage_data = key_data.get("data", {})
+
+        return BalanceInfo(
+            total_credits=float(credits_data.get("total_credits", 0)),
+            usage_total=float(credits_data.get("total_usage", 0)),
+            usage_daily=float(usage_data.get("usage_daily", 0)),
+            usage_weekly=float(usage_data.get("usage_weekly", 0)),
+            usage_monthly=float(usage_data.get("usage_monthly", 0)),
+        )

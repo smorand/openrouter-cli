@@ -10,7 +10,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from openrouter_cli.api_client import OpenRouterClient
+from openrouter_cli.api_client import BalanceInfo, OpenRouterClient
 from openrouter_cli.config import settings
 from openrouter_cli.logging_config import setup_logging
 
@@ -19,6 +19,23 @@ logger = logging.getLogger(__name__)
 console = Console()
 
 WEEKLY_GROUPING_THRESHOLD = 14
+
+
+def _display_balance(balance: BalanceInfo) -> None:
+    """Display balance information in a formatted table."""
+    table = Table(title="Account Balance")
+    table.add_column("Metric", style="cyan")
+    table.add_column("Amount", justify="right", style="green")
+
+    table.add_row("Remaining Credits", f"{balance.remaining_credits:.2f}")
+    table.add_row("Total Credits (purchased)", f"{balance.total_credits:.2f}")
+    table.add_row("Total Usage (lifetime)", f"{balance.usage_total:.2f}")
+    if balance.usage_daily > 0:
+        table.add_row("Usage Today", f"{balance.usage_daily:.2f}")
+        table.add_row("Usage This Week", f"{balance.usage_weekly:.2f}")
+        table.add_row("Usage This Month", f"{balance.usage_monthly:.2f}")
+
+    console.print(table)
 
 
 @app.callback()
@@ -159,6 +176,8 @@ def credits(
     async def _run() -> None:
         client = OpenRouterClient(settings)
         try:
+            balance_info = await client.get_balance()
+
             end_date = datetime.now()
             start_date = end_date - timedelta(days=days - 1)
 
@@ -216,6 +235,8 @@ def credits(
                 console.print(f"\n[bold]Credit Usage Chart ({start_str} to {end_str})[/bold]\n")
                 print(fig.show())
                 console.print(f"\n[bold]Total:[/bold] {sum(values):.2f}")
+                console.print()
+                _display_balance(balance_info)
                 return
 
             if no_per_day and no_per_model:
@@ -230,6 +251,8 @@ def credits(
                 console.print(f"  Total Requests: {total_requests}")
                 console.print(f"  Total Prompt Tokens: {total_prompt:,}")
                 console.print(f"  Total Completion Tokens: {total_completion:,}")
+                console.print()
+                _display_balance(balance_info)
                 return
 
             if no_per_day:
@@ -284,6 +307,8 @@ def credits(
                 )
 
                 console.print(table)
+                console.print()
+                _display_balance(balance_info)
                 return
 
             if no_per_model:
@@ -346,6 +371,8 @@ def credits(
                 )
 
                 console.print(table)
+                console.print()
+                _display_balance(balance_info)
                 return
 
             daily_models: dict[str, dict[str, float]] = {}
@@ -428,6 +455,8 @@ def credits(
 
                 console.print(table)
                 console.print(f"\n[dim]Grouped by week ({len(all_dates)} days)[/dim]")
+                console.print()
+                _display_balance(balance_info)
             else:
                 table = Table(title=f"Credit Usage: Per Model per Day ({start_str} to {end_str})")
                 table.add_column("Model", style="cyan", max_width=25)
@@ -458,6 +487,24 @@ def credits(
                 table.add_row(*summary_row, style="bold")
 
                 console.print(table)
+                console.print()
+                _display_balance(balance_info)
+        finally:
+            await client.close()
+
+    asyncio.run(_run())
+
+
+@app.command()
+def balance() -> None:
+    """Get current account balance and usage information."""
+    logger.info("Fetching balance")
+
+    async def _run() -> None:
+        client = OpenRouterClient(settings)
+        try:
+            balance_info = await client.get_balance()
+            _display_balance(balance_info)
         finally:
             await client.close()
 
