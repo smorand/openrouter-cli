@@ -61,11 +61,11 @@ def models(
     ] = None,
     free: Annotated[
         bool,
-        typer.Option("--free", help="Filter to show only free models"),
+        typer.Option("--free", "-F", help="Filter to show only free models"),
     ] = False,
     images: Annotated[
         bool,
-        typer.Option("--images", help="Filter to show only models that support images"),
+        typer.Option("--images", "-I", help="Filter to show only models that support images"),
     ] = False,
     provider: Annotated[
         str | None,
@@ -116,8 +116,8 @@ def models(
                 table.add_column("ID", style="cyan", max_width=30)
                 table.add_column("Name", style="magenta", max_width=40)
                 table.add_column("Context", justify="right", style="green")
-                table.add_column("Prompt ($/1k)", justify="right", style="yellow")
-                table.add_column("Completion ($/1k)", justify="right", style="yellow")
+                table.add_column("Prompt ($/1M)", justify="right", style="yellow")
+                table.add_column("Completion ($/1M)", justify="right", style="yellow")
                 table.add_column("Free", justify="center", style="bold")
                 table.add_column("Image", justify="center", style="bold")
 
@@ -126,8 +126,8 @@ def models(
                         model.id,
                         model.name,
                         str(model.context_length),
-                        f"{model.prompt_price * 1000:.6f}",
-                        f"{model.completion_price * 1000:.6f}",
+                        f"{model.prompt_price * 1000000:.4f}",
+                        f"{model.completion_price * 1000000:.4f}",
                         "[green]✓[/green]" if model.is_free else "[red]✗[/red]",
                         "[green]✓[/green]" if model.supports_image else "[red]✗[/red]",
                     )

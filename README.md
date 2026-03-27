@@ -28,7 +28,10 @@ uv run or-cli --help
 uv run or-cli models
 
 # List only free models
-uv run or-cli models --free
+uv run or-cli models -F
+
+# List models from a specific provider
+uv run or-cli models -p openai
 
 # Get credit usage for last 7 days
 uv run or-cli credits
@@ -63,24 +66,30 @@ uv run or-cli models
 
 # List only free models
 uv run or-cli models --free
+uv run or-cli models -F
 
 # Filter by provider
 uv run or-cli models --provider openai
+uv run or-cli models -p anthropic
+
+# Show only models supporting images
+uv run or-cli models --images
+uv run or-cli models -I
 
 # Combine filters
 uv run or-cli models --provider anthropic --free
-uv run or-cli models --provider openai --images
+uv run or-cli models -p openai -I
 ```
 
 Options:
-- `--free`: Show only free models
-- `--images`: Show only models that support image inputs
+- `-F, --free`: Show only free models
+- `-I, --images`: Show only models that support image inputs
 - `-p, --provider`: Filter by provider (e.g., openai, anthropic, meta-llama)
 
 Output includes:
 - Model ID and name
 - Context length
-- Prompt and completion pricing (per 1k tokens)
+- Prompt and completion pricing (per 1M tokens)
 - Free/paid indicator
 - Image support indicator
 
