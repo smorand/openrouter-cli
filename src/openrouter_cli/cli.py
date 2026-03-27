@@ -151,8 +151,8 @@ def _display_model_details(model: ModelInfo) -> None:
     if model.knowledge_cutoff:
         table.add_row("Knowledge Cutoff", model.knowledge_cutoff)
 
-    table.add_row("Prompt Price", f"${model.prompt_price:.6f}/token ({model.prompt_price * 1000:.4f}/1k)")
-    table.add_row("Completion Price", f"${model.completion_price:.6f}/token ({model.completion_price * 1000:.4f}/1k)")
+    table.add_row("Prompt Price", f"${model.prompt_price * 1000000:.4f}/1M tokens")
+    table.add_row("Completion Price", f"${model.completion_price * 1000000:.4f}/1M tokens")
     table.add_row("Free", "[green]Yes[/green]" if model.is_free else "[red]No[/red]")
 
     console.print(table)
