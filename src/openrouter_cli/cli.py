@@ -59,23 +59,32 @@ def models(
         bool,
         typer.Option("--free", help="Filter to show only free models"),
     ] = False,
+    images: Annotated[
+        bool,
+        typer.Option("--images", help="Filter to show only models that support images"),
+    ] = False,
 ) -> None:
     """List available models from OpenRouter.
 
     Use --free flag to filter and show only free models.
+
+    Use --images flag to filter and show only models that support image inputs.
     """
-    logger.info("Fetching models (free=%s)", free)
+    logger.info("Fetching models (free=%s, images=%s)", free, images)
 
     async def _run() -> None:
         client = OpenRouterClient(settings)
         try:
             all_models = await client.list_models()
 
+            models = all_models
             if free:
-                models = [m for m in all_models if m.is_free]
-                logger.info("Filtered to %d free models", len(models))
-            else:
-                models = all_models
+                models = [m for m in models if m.is_free]
+            if images:
+                models = [m for m in models if m.supports_image]
+
+            if free or images:
+                logger.info("Filtered to %d models", len(models))
 
             if not models:
                 console.print("[red]No models found[/red]")
