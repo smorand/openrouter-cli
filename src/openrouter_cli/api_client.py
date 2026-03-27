@@ -22,6 +22,7 @@ class ModelInfo:
     completion_price: float
     context_length: int
     is_free: bool
+    supports_image: bool
 
 
 @dataclass(frozen=True)
@@ -101,6 +102,10 @@ class OpenRouterClient:
             completion_price = float(pricing.get("completion", 0))
             is_free = prompt_price == 0 and completion_price == 0
 
+            architecture = item.get("architecture", {})
+            input_modalities = architecture.get("input_modalities", [])
+            supports_image = "image" in input_modalities
+
             models.append(
                 ModelInfo(
                     id=item.get("id", ""),
@@ -110,6 +115,7 @@ class OpenRouterClient:
                     completion_price=completion_price,
                     context_length=item.get("context_length", 0),
                     is_free=is_free,
+                    supports_image=supports_image,
                 )
             )
 

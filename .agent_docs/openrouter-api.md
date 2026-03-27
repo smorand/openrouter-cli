@@ -79,3 +79,29 @@ Returns real-time aggregate usage totals for the current API key:
 ## Models Endpoint (`/api/v1/models`)
 
 Returns list of available models with pricing and capabilities. No authentication required for basic listing.
+
+### Model Response Structure
+
+```json
+{
+  "id": "openai/gpt-4o",
+  "name": "OpenAI: GPT-4o",
+  "canonical_slug": "openai/gpt-4o-2024-11-20",
+  "context_length": 128000,
+  "architecture": {
+    "modality": "text+image->text",
+    "input_modalities": ["text", "image"],
+    "output_modalities": ["text"]
+  },
+  "pricing": {
+    "prompt": "0.0000025",
+    "completion": "0.00001"
+  }
+}
+```
+
+### Image Support Detection
+
+Image support is determined by checking if `"image"` is in the `architecture.input_modalities` list:
+- Models with `"image"` in `input_modalities` can accept image inputs
+- Common multimodal models include GPT-4o, Claude 3.5, Gemini, etc.

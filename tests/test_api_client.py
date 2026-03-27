@@ -13,10 +13,12 @@ def test_model_info_creation() -> None:
         completion_price=0.00006,
         context_length=8192,
         is_free=False,
+        supports_image=True,
     )
     assert model.id == "openai/gpt-4"
     assert model.name == "GPT-4"
     assert model.is_free is False
+    assert model.supports_image is True
 
 
 def test_model_info_free_detection() -> None:
@@ -29,6 +31,7 @@ def test_model_info_free_detection() -> None:
         completion_price=0.0,
         context_length=4096,
         is_free=True,
+        supports_image=False,
     )
     assert free_model.is_free is True
 
@@ -40,6 +43,7 @@ def test_model_info_free_detection() -> None:
         completion_price=0.00002,
         context_length=4096,
         is_free=False,
+        supports_image=True,
     )
     assert paid_model.is_free is False
 

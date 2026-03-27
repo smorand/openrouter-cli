@@ -88,6 +88,7 @@ def models(
             table.add_column("Prompt ($/1k)", justify="right", style="yellow")
             table.add_column("Completion ($/1k)", justify="right", style="yellow")
             table.add_column("Free", justify="center", style="bold")
+            table.add_column("Image", justify="center", style="bold")
 
             for model in models:
                 table.add_row(
@@ -97,6 +98,7 @@ def models(
                     f"{model.prompt_price * 1000:.6f}",
                     f"{model.completion_price * 1000:.6f}",
                     "[green]✓[/green]" if model.is_free else "[red]✗[/red]",
+                    "[green]✓[/green]" if model.supports_image else "[red]✗[/red]",
                 )
 
             console.print(table)
