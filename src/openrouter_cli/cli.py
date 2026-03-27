@@ -10,7 +10,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from openrouter_cli.api_client import BalanceInfo, OpenRouterClient
+from openrouter_cli.api_client import BalanceInfo, ModelInfo, OpenRouterClient
 from openrouter_cli.config import settings
 from openrouter_cli.logging_config import setup_logging
 
@@ -55,6 +55,10 @@ def main(
 
 @app.command()
 def models(
+    model_id: Annotated[
+        str | None,
+        typer.Argument(help="Model ID to show details (e.g., openai/gpt-4o)"),
+    ] = None,
     free: Annotated[
         bool,
         typer.Option("--free", help="Filter to show only free models"),
@@ -69,53 +73,110 @@ def models(
     Use --free flag to filter and show only free models.
 
     Use --images flag to filter and show only models that support image inputs.
+
+    Provide a model ID as argument to show detailed capabilities.
     """
-    logger.info("Fetching models (free=%s, images=%s)", free, images)
+    logger.info("Fetching models (model_id=%s, free=%s, images=%s)", model_id, free, images)
 
     async def _run() -> None:
         client = OpenRouterClient(settings)
         try:
-            all_models = await client.list_models()
+            if model_id:
+                model = await client.get_model(model_id)
+                if not model:
+                    console.print(f"[red]Model not found: {model_id}[/red]")
+                    return
+                _display_model_details(model)
+            else:
+                all_models = await client.list_models()
 
-            models = all_models
-            if free:
-                models = [m for m in models if m.is_free]
-            if images:
-                models = [m for m in models if m.supports_image]
+                models = all_models
+                if free:
+                    models = [m for m in models if m.is_free]
+                if images:
+                    models = [m for m in models if m.supports_image]
 
-            if free or images:
-                logger.info("Filtered to %d models", len(models))
+                if free or images:
+                    logger.info("Filtered to %d models", len(models))
 
-            if not models:
-                console.print("[red]No models found[/red]")
-                return
+                if not models:
+                    console.print("[red]No models found[/red]")
+                    return
 
-            table = Table(title="OpenRouter Models", show_lines=True)
-            table.add_column("ID", style="cyan", max_width=30)
-            table.add_column("Name", style="magenta", max_width=40)
-            table.add_column("Context", justify="right", style="green")
-            table.add_column("Prompt ($/1k)", justify="right", style="yellow")
-            table.add_column("Completion ($/1k)", justify="right", style="yellow")
-            table.add_column("Free", justify="center", style="bold")
-            table.add_column("Image", justify="center", style="bold")
+                table = Table(title="OpenRouter Models", show_lines=True)
+                table.add_column("ID", style="cyan", max_width=30)
+                table.add_column("Name", style="magenta", max_width=40)
+                table.add_column("Context", justify="right", style="green")
+                table.add_column("Prompt ($/1k)", justify="right", style="yellow")
+                table.add_column("Completion ($/1k)", justify="right", style="yellow")
+                table.add_column("Free", justify="center", style="bold")
+                table.add_column("Image", justify="center", style="bold")
 
-            for model in models:
-                table.add_row(
-                    model.id,
-                    model.name,
-                    str(model.context_length),
-                    f"{model.prompt_price * 1000:.6f}",
-                    f"{model.completion_price * 1000:.6f}",
-                    "[green]✓[/green]" if model.is_free else "[red]✗[/red]",
-                    "[green]✓[/green]" if model.supports_image else "[red]✗[/red]",
-                )
+                for model in models:
+                    table.add_row(
+                        model.id,
+                        model.name,
+                        str(model.context_length),
+                        f"{model.prompt_price * 1000:.6f}",
+                        f"{model.completion_price * 1000:.6f}",
+                        "[green]✓[/green]" if model.is_free else "[red]✗[/red]",
+                        "[green]✓[/green]" if model.supports_image else "[red]✗[/red]",
+                    )
 
-            console.print(table)
-            console.print(f"\n[bold]Total:[/bold] {len(models)} models")
+                console.print(table)
+                console.print(f"\n[bold]Total:[/bold] {len(models)} models")
         finally:
             await client.close()
 
     asyncio.run(_run())
+
+
+def _display_model_details(model: ModelInfo) -> None:
+    """Display detailed model information."""
+    console.print(f"\n[bold cyan]{model.name}[/bold cyan]")
+    console.print(f"[dim]{model.id}[/dim]\n")
+
+    if model.description:
+        console.print("[bold]Description:[/bold]")
+        console.print(f"{model.description}\n")
+
+    table = Table(show_header=False, box=None, padding=(0, 2))
+    table.add_column("Key", style="bold yellow")
+    table.add_column("Value", style="white")
+
+    table.add_row("Canonical Slug", model.canonical_slug)
+    table.add_row("Context Length", f"{model.context_length:,} tokens")
+    if model.max_completion_tokens:
+        table.add_row("Max Completion", f"{model.max_completion_tokens:,} tokens")
+    if model.knowledge_cutoff:
+        table.add_row("Knowledge Cutoff", model.knowledge_cutoff)
+
+    table.add_row("Prompt Price", f"${model.prompt_price:.6f}/token ({model.prompt_price * 1000:.4f}/1k)")
+    table.add_row("Completion Price", f"${model.completion_price:.6f}/token ({model.completion_price * 1000:.4f}/1k)")
+    table.add_row("Free", "[green]Yes[/green]" if model.is_free else "[red]No[/red]")
+
+    console.print(table)
+
+    console.print("\n[bold]Capabilities:[/bold]")
+    cap_table = Table(show_header=False, box=None, padding=(0, 2))
+    cap_table.add_column("Key", style="bold yellow")
+    cap_table.add_column("Value", style="white")
+
+    if model.modality:
+        cap_table.add_row("Modality", model.modality)
+    cap_table.add_row("Input Modalities", ", ".join(model.input_modalities) if model.input_modalities else "text")
+    cap_table.add_row("Output Modalities", ", ".join(model.output_modalities) if model.output_modalities else "text")
+    cap_table.add_row("Image Support", "[green]Yes[/green]" if model.supports_image else "[red]No[/red]")
+    cap_table.add_row("Content Moderation", "[green]Yes[/green]" if model.is_moderated else "[red]No[/red]")
+
+    console.print(cap_table)
+
+    if model.supported_parameters:
+        console.print("\n[bold]Supported Parameters:[/bold]")
+        params = list(model.supported_parameters)
+        for i in range(0, len(params), 5):
+            chunk = params[i : i + 5]
+            console.print("  " + ", ".join(chunk))
 
 
 @app.command()

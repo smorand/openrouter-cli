@@ -23,6 +23,14 @@ class ModelInfo:
     context_length: int
     is_free: bool
     supports_image: bool
+    description: str | None = None
+    input_modalities: tuple[str, ...] = ()
+    output_modalities: tuple[str, ...] = ()
+    modality: str | None = None
+    knowledge_cutoff: str | None = None
+    supported_parameters: tuple[str, ...] = ()
+    max_completion_tokens: int | None = None
+    is_moderated: bool = False
 
 
 @dataclass(frozen=True)
@@ -97,30 +105,71 @@ class OpenRouterClient:
 
         models = []
         for item in data.get("data", []):
-            pricing = item.get("pricing", {})
-            prompt_price = float(pricing.get("prompt", 0))
-            completion_price = float(pricing.get("completion", 0))
-            is_free = prompt_price == 0 and completion_price == 0
-
-            architecture = item.get("architecture", {})
-            input_modalities = architecture.get("input_modalities", [])
-            supports_image = "image" in input_modalities
-
-            models.append(
-                ModelInfo(
-                    id=item.get("id", ""),
-                    name=item.get("name", ""),
-                    canonical_slug=item.get("canonical_slug", ""),
-                    prompt_price=prompt_price,
-                    completion_price=completion_price,
-                    context_length=item.get("context_length", 0),
-                    is_free=is_free,
-                    supports_image=supports_image,
-                )
-            )
+            models.append(self._parse_model(item))
 
         logger.info("Fetched %d models", len(models))
         return models
+
+    async def get_model(self, model_id: str) -> ModelInfo | None:
+        """Get a single model by ID.
+
+        Args:
+            model_id: Model ID (e.g., "openai/gpt-4o")
+
+        Returns:
+            ModelInfo object if found, None otherwise
+        """
+        logger.info("Fetching model %s", model_id)
+        response = await self._client.get("/models")
+        response.raise_for_status()
+        data = response.json()
+
+        for item in data.get("data", []):
+            if item.get("id") == model_id or item.get("canonical_slug") == model_id:
+                return self._parse_model(item)
+
+        return None
+
+    def _parse_model(self, item: dict[str, Any]) -> ModelInfo:
+        """Parse model data from API response.
+
+        Args:
+            item: Model data from API
+
+        Returns:
+            ModelInfo object
+        """
+        pricing = item.get("pricing", {})
+        prompt_price = float(pricing.get("prompt", 0))
+        completion_price = float(pricing.get("completion", 0))
+        is_free = prompt_price == 0 and completion_price == 0
+
+        architecture = item.get("architecture", {})
+        input_modalities = tuple(architecture.get("input_modalities", []))
+        output_modalities = tuple(architecture.get("output_modalities", []))
+        supports_image = "image" in input_modalities
+
+        top_provider = item.get("top_provider") or {}
+        per_request_limits = item.get("per_request_limits") or {}
+
+        return ModelInfo(
+            id=item.get("id", ""),
+            name=item.get("name", ""),
+            canonical_slug=item.get("canonical_slug", ""),
+            prompt_price=prompt_price,
+            completion_price=completion_price,
+            context_length=item.get("context_length", 0),
+            is_free=is_free,
+            supports_image=supports_image,
+            description=item.get("description"),
+            input_modalities=input_modalities,
+            output_modalities=output_modalities,
+            modality=architecture.get("modality"),
+            knowledge_cutoff=item.get("knowledge_cutoff"),
+            supported_parameters=tuple(item.get("supported_parameters", [])),
+            max_completion_tokens=per_request_limits.get("completion_tokens"),
+            is_moderated=top_provider.get("is_moderated", False),
+        )
 
     async def get_credit_usage(
         self,
