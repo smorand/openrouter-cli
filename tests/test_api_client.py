@@ -14,6 +14,8 @@ def test_model_info_creation() -> None:
         context_length=8192,
         is_free=False,
         supports_image=True,
+        supports_file=False,
+        supports_audio=False,
     )
     assert model.id == "openai/gpt-4"
     assert model.name == "GPT-4"
@@ -32,6 +34,8 @@ def test_model_info_free_detection() -> None:
         context_length=4096,
         is_free=True,
         supports_image=False,
+        supports_file=False,
+        supports_audio=False,
     )
     assert free_model.is_free is True
 
@@ -44,6 +48,8 @@ def test_model_info_free_detection() -> None:
         context_length=4096,
         is_free=False,
         supports_image=True,
+        supports_file=True,
+        supports_audio=False,
     )
     assert paid_model.is_free is False
 

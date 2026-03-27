@@ -61,11 +61,19 @@ def models(
     ] = None,
     free: Annotated[
         bool,
-        typer.Option("--free", "-F", help="Filter to show only free models"),
+        typer.Option("--free", help="Filter to show only free models"),
     ] = False,
     images: Annotated[
         bool,
         typer.Option("--images", "-I", help="Filter to show only models that support images"),
+    ] = False,
+    file: Annotated[
+        bool,
+        typer.Option("--file", "-F", help="Filter to show only models that support file inputs"),
+    ] = False,
+    audio: Annotated[
+        bool,
+        typer.Option("--audio", "-A", help="Filter to show only models that support audio inputs"),
     ] = False,
     provider: Annotated[
         str | None,
@@ -76,13 +84,25 @@ def models(
 
     Use --free flag to filter and show only free models.
 
-    Use --images flag to filter and show only models that support image inputs.
+    Use --images/-I flag to filter and show only models that support image inputs.
+
+    Use --file/-F flag to filter and show only models that support file inputs.
+
+    Use --audio/-A flag to filter and show only models that support audio inputs.
 
     Use --provider to filter by provider (e.g., openai, anthropic).
 
     Provide a model ID as argument to show detailed capabilities.
     """
-    logger.info("Fetching models (model_id=%s, free=%s, images=%s, provider=%s)", model_id, free, images, provider)
+    logger.info(
+        "Fetching models (model_id=%s, free=%s, images=%s, file=%s, audio=%s, provider=%s)",
+        model_id,
+        free,
+        images,
+        file,
+        audio,
+        provider,
+    )
 
     async def _run() -> None:
         client = OpenRouterClient(settings)
@@ -104,8 +124,12 @@ def models(
                     models = [m for m in models if m.is_free]
                 if images:
                     models = [m for m in models if m.supports_image]
+                if file:
+                    models = [m for m in models if m.supports_file]
+                if audio:
+                    models = [m for m in models if m.supports_audio]
 
-                if provider or free or images:
+                if provider or free or images or file or audio:
                     logger.info("Filtered to %d models", len(models))
 
                 if not models:
@@ -119,17 +143,26 @@ def models(
                 table.add_column("Prompt ($/1M)", justify="right", style="yellow")
                 table.add_column("Completion ($/1M)", justify="right", style="yellow")
                 table.add_column("Free", justify="center", style="bold")
-                table.add_column("Image", justify="center", style="bold")
+                table.add_column("Capabilities", justify="center", style="bold")
 
                 for model in models:
+                    caps = []
+                    if model.supports_image:
+                        caps.append("📷")
+                    if model.supports_file:
+                        caps.append("📁")
+                    if model.supports_audio:
+                        caps.append("🎵")
+                    caps_str = " ".join(caps) if caps else "-"
+
                     table.add_row(
                         model.id,
                         model.name,
                         str(model.context_length),
                         f"{model.prompt_price * 1000000:.4f}",
                         f"{model.completion_price * 1000000:.4f}",
-                        "[green]✓[/green]" if model.is_free else "[red]✗[/red]",
-                        "[green]✓[/green]" if model.supports_image else "[red]✗[/red]",
+                        "[green]Y[/green]" if model.is_free else "[red]N[/red]",
+                        caps_str,
                     )
 
                 console.print(table)
@@ -176,6 +209,8 @@ def _display_model_details(model: ModelInfo) -> None:
     cap_table.add_row("Input Modalities", ", ".join(model.input_modalities) if model.input_modalities else "text")
     cap_table.add_row("Output Modalities", ", ".join(model.output_modalities) if model.output_modalities else "text")
     cap_table.add_row("Image Support", "[green]Yes[/green]" if model.supports_image else "[red]No[/red]")
+    cap_table.add_row("File Support", "[green]Yes[/green]" if model.supports_file else "[red]No[/red]")
+    cap_table.add_row("Audio Support", "[green]Yes[/green]" if model.supports_audio else "[red]No[/red]")
     cap_table.add_row("Content Moderation", "[green]Yes[/green]" if model.is_moderated else "[red]No[/red]")
 
     console.print(cap_table)

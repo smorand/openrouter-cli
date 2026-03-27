@@ -23,6 +23,8 @@ class ModelInfo:
     context_length: int
     is_free: bool
     supports_image: bool
+    supports_file: bool
+    supports_audio: bool
     description: str | None = None
     input_modalities: tuple[str, ...] = ()
     output_modalities: tuple[str, ...] = ()
@@ -148,6 +150,8 @@ class OpenRouterClient:
         input_modalities = tuple(architecture.get("input_modalities", []))
         output_modalities = tuple(architecture.get("output_modalities", []))
         supports_image = "image" in input_modalities
+        supports_file = "file" in input_modalities
+        supports_audio = "audio" in input_modalities
 
         top_provider = item.get("top_provider") or {}
         per_request_limits = item.get("per_request_limits") or {}
@@ -161,6 +165,8 @@ class OpenRouterClient:
             context_length=item.get("context_length", 0),
             is_free=is_free,
             supports_image=supports_image,
+            supports_file=supports_file,
+            supports_audio=supports_audio,
             description=item.get("description"),
             input_modalities=input_modalities,
             output_modalities=output_modalities,
