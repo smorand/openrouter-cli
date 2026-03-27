@@ -116,7 +116,7 @@ def models(
             else:
                 all_models = await client.list_models()
 
-                models = all_models
+                models = [m for m in all_models if m.id != "openrouter/auto"]
                 if provider:
                     provider_prefix = f"{provider}/"
                     models = [m for m in models if m.id.startswith(provider_prefix)]
