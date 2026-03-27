@@ -63,13 +63,26 @@ uv run or-cli models
 
 # List only free models
 uv run or-cli models --free
+
+# Filter by provider
+uv run or-cli models --provider openai
+
+# Combine filters
+uv run or-cli models --provider anthropic --free
+uv run or-cli models --provider openai --images
 ```
+
+Options:
+- `--free`: Show only free models
+- `--images`: Show only models that support image inputs
+- `-p, --provider`: Filter by provider (e.g., openai, anthropic, meta-llama)
 
 Output includes:
 - Model ID and name
 - Context length
 - Prompt and completion pricing (per 1k tokens)
 - Free/paid indicator
+- Image support indicator
 
 ### credits
 

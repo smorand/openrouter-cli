@@ -67,6 +67,10 @@ def models(
         bool,
         typer.Option("--images", help="Filter to show only models that support images"),
     ] = False,
+    provider: Annotated[
+        str | None,
+        typer.Option("--provider", "-p", help="Filter by provider (e.g., openai, anthropic)"),
+    ] = None,
 ) -> None:
     """List available models from OpenRouter.
 
@@ -74,9 +78,11 @@ def models(
 
     Use --images flag to filter and show only models that support image inputs.
 
+    Use --provider to filter by provider (e.g., openai, anthropic).
+
     Provide a model ID as argument to show detailed capabilities.
     """
-    logger.info("Fetching models (model_id=%s, free=%s, images=%s)", model_id, free, images)
+    logger.info("Fetching models (model_id=%s, free=%s, images=%s, provider=%s)", model_id, free, images, provider)
 
     async def _run() -> None:
         client = OpenRouterClient(settings)
@@ -91,12 +97,15 @@ def models(
                 all_models = await client.list_models()
 
                 models = all_models
+                if provider:
+                    provider_prefix = f"{provider}/"
+                    models = [m for m in models if m.id.startswith(provider_prefix)]
                 if free:
                     models = [m for m in models if m.is_free]
                 if images:
                     models = [m for m in models if m.supports_image]
 
-                if free or images:
+                if provider or free or images:
                     logger.info("Filtered to %d models", len(models))
 
                 if not models:

@@ -18,7 +18,7 @@ make docker-build       # Build Docker image
 
 ## CLI Commands
 
-- `or-cli models [--free]` - List models, optionally filter free ones
+- `or-cli models [--free] [--images] [--provider NAME]` - List models with optional filters
 - `or-cli credits [-m model] [-d days] [-npd] [-npm]` - Get credit usage
 - `or-cli balance` - Get current account balance
 
